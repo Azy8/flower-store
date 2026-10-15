@@ -21,6 +21,10 @@ const lo = {
   noContact: "ຮ້ານຍັງບໍ່ໄດ້ໃສ່ຊ່ອງທາງຕິດຕໍ່",
   hoursLabel: "ເວລາເປີດ-ປິດ",
   close: "ປິດ",
+  pagination: "ເລືອກໜ້າ",
+  prevPage: "ໜ້າກ່ອນ",
+  nextPage: "ໜ້າຖັດໄປ",
+  pageOf: (page: number, total: number) => `ໜ້າ ${page} / ${total}`,
   tellShop: (name: string) => `ບອກຮ້ານວ່າສົນໃຈ “${name}”`,
   // Pre-filled chat message (WhatsApp, LINE OA) when a customer taps a contact button
   greeting: "ສະບາຍດີ",

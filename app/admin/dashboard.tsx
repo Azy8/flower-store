@@ -17,6 +17,7 @@ import {
   setProductVisibleAction,
 } from "@/lib/admin-api";
 import { CheckIcon, CloseIcon, EditIcon, EyeIcon, ImageIcon, LeafIcon, LogoutIcon, PlusIcon, SearchIcon, TrashIcon } from "../components/icons";
+import { Pager, paginate } from "../components/pager";
 import { ProductImage } from "../components/product-image";
 
 type Tab = "products" | "categories" | "settings";
@@ -86,6 +87,8 @@ export function Dashboard({ data, email }: { data: StoreData; email: string }) {
 function ProductsTab({ products, categories }: { products: Product[]; categories: Category[] }) {
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const listTop = useRef<HTMLDivElement>(null);
   const [editing, setEditing] = useState<Product | "new" | null>(null);
 
   const catName = (id: string) => categories.find((c) => c.id === id)?.name ?? t.noCategory;
@@ -94,6 +97,12 @@ function ProductsTab({ products, categories }: { products: Product[]; categories
     .filter((p) => filter === "all" || p.categoryId === filter)
     .filter((p) => !q || p.name.toLowerCase().includes(q))
     .sort((a, b) => b.createdAt - a.createdAt);
+  // clamped: after deleting the last item on a page, you land on the previous page
+  const { pageItems, current, totalPages } = paginate(list, page);
+  const goToPage = (p: number) => {
+    setPage(p);
+    listTop.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
   const shownCount = products.filter((p) => p.visible).length;
 
   return (
@@ -103,7 +112,7 @@ function ProductsTab({ products, categories }: { products: Product[]; categories
 
       {categories.length === 0 && <p className={`mt-3 ${errorCls}`}>{t.needCategoryFirst}</p>}
 
-      <div role="search" className="relative mt-3">
+      <div ref={listTop} role="search" className="relative mt-3 scroll-mt-28">
         <label htmlFor="psearch" className="sr-only">
           {t.searchLabel}
         </label>
@@ -112,7 +121,10 @@ function ProductsTab({ products, categories }: { products: Product[]; categories
           id="psearch"
           type="search"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setPage(1);
+          }}
           placeholder={t.searchPh}
           autoComplete="off"
           enterKeyHint="search"
@@ -121,7 +133,10 @@ function ProductsTab({ products, categories }: { products: Product[]; categories
         {query && (
           <button
             type="button"
-            onClick={() => setQuery("")}
+            onClick={() => {
+              setQuery("");
+              setPage(1);
+            }}
             aria-label={t.clearSearch}
             className="absolute right-0.5 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-soft"
           >
@@ -136,7 +151,10 @@ function ProductsTab({ products, categories }: { products: Product[]; categories
             key={c.id}
             type="button"
             aria-pressed={filter === c.id}
-            onClick={() => setFilter(c.id)}
+            onClick={() => {
+              setFilter(c.id);
+              setPage(1);
+            }}
             className={`min-h-10 flex-none whitespace-nowrap rounded-full border-2 px-3.5 text-sm font-semibold ${
               filter === c.id ? "border-brand bg-brand text-white" : "border-chip bg-white"
             }`}
@@ -150,7 +168,7 @@ function ProductsTab({ products, categories }: { products: Product[]; categories
         {list.length === 0 && (
           <li className="rounded-2xl bg-white p-8 text-center text-sm text-muted">{q ? t.noResults(query.trim()) : t.noProducts}</li>
         )}
-        {list.map((p) => (
+        {pageItems.map((p) => (
           <li key={p.id} className="flex items-center gap-1 rounded-2xl border border-line bg-white pr-2">
             {/* the whole row opens the editor */}
             <button
@@ -174,6 +192,7 @@ function ProductsTab({ products, categories }: { products: Product[]; categories
           </li>
         ))}
       </ul>
+      <Pager current={current} totalPages={totalPages} onChange={goToPage} />
 
       {/* Floating "add" button, reachable with the thumb */}
       <button

@@ -6,6 +6,7 @@ import { contactLinks, telLink, type ContactLink } from "@/lib/contact";
 import { t, type Dict } from "@/lib/i18n";
 import { formatPrice } from "@/lib/price";
 import { ChatIcon, CloseIcon, LeafIcon, PhoneIcon, PinIcon } from "./components/icons";
+import { Pager, paginate } from "./components/pager";
 import { ProductImage } from "./components/product-image";
 
 type Props = { settings: Settings; categories: Category[]; products: Product[] };
@@ -19,6 +20,8 @@ function productLink(id: string): string {
 
 export function Catalog({ settings, categories, products }: Props) {
   const [cat, setCat] = useState("all");
+  const [page, setPage] = useState(1);
+  const listTop = useRef<HTMLElement>(null);
   const [openId, setOpenId] = useState<string | null>(null);
 
   // Only show tabs for categories that actually have products.
@@ -33,6 +36,16 @@ export function Catalog({ settings, categories, products }: Props) {
 
   const catName = (id: string) => categories.find((c) => c.id === id)?.name ?? "";
   const shown = cat === "all" ? products : products.filter((p) => p.categoryId === cat);
+  const { pageItems, current, totalPages } = paginate(shown, page);
+
+  const pickCategory = (id: string) => {
+    setCat(id);
+    setPage(1); // a new category starts on its first page
+  };
+  const goToPage = (p: number) => {
+    setPage(p);
+    listTop.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
   const open = products.find((p) => p.id === openId) ?? null;
 
   // A link like https://shop/#p-<id> opens that product directly (handy to send in chat).
@@ -97,7 +110,7 @@ export function Catalog({ settings, categories, products }: Props) {
               key={tab.id}
               type="button"
               aria-pressed={cat === tab.id}
-              onClick={() => setCat(tab.id)}
+              onClick={() => pickCategory(tab.id)}
               className={`min-h-11 flex-none whitespace-nowrap rounded-full border-2 px-4 text-[15px] font-semibold transition-colors ${
                 cat === tab.id ? "border-brand bg-brand text-white" : "border-chip bg-white text-ink"
               }`}
@@ -108,12 +121,12 @@ export function Catalog({ settings, categories, products }: Props) {
         </div>
       </nav>
 
-      <main className="mx-auto max-w-5xl px-4 pb-2 pt-4">
+      <main ref={listTop} className="mx-auto max-w-5xl scroll-mt-16 px-4 pb-2 pt-4">
         {shown.length === 0 ? (
           <p className="rounded-2xl bg-cream px-4 py-12 text-center text-muted">{t.empty}</p>
         ) : (
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
-            {shown.map((p) => (
+            {pageItems.map((p) => (
               <li key={p.id}>
                 <a
                   href={`${HASH_PREFIX}${p.id}`}
@@ -139,6 +152,7 @@ export function Catalog({ settings, categories, products }: Props) {
             ))}
           </ul>
         )}
+        <Pager current={current} totalPages={totalPages} onChange={goToPage} />
       </main>
 
       <ContactSection settings={settings} t={t} />
