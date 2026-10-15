@@ -47,7 +47,7 @@ export function Catalog({ settings, categories, products }: Props) {
       history.replaceState(null, "", window.location.pathname + window.location.search);
   };
 
-  const chatLinks = contactLinks(settings).filter((l) => l.kind !== "phone");
+  const chatLinks = contactLinks(settings, t.greeting).filter((l) => l.kind !== "phone");
   const tel = telLink(settings.phone);
 
   return (
@@ -158,7 +158,7 @@ function ContactButton({ link, primary, compact, t }: { link: ContactLink; prima
 }
 
 function ContactSection({ settings, t }: { settings: Settings; t: Dict }) {
-  const links = contactLinks(settings);
+  const links = contactLinks(settings, t.greeting);
   return (
     <section id="contact" className="mx-auto mt-6 w-full max-w-5xl px-4 pb-10">
       <div className="flex flex-col gap-3.5 rounded-3xl border border-line bg-blush px-5 py-6">

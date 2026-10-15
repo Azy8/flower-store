@@ -22,7 +22,9 @@ const lo = {
   hoursLabel: "ເວລາເປີດ-ປິດ",
   close: "ປິດ",
   tellShop: (name: string) => `ບອກຮ້ານວ່າສົນໃຈ “${name}”`,
-  interest: (name: string, price: string) => `ສົນໃຈແບບ "${name}"${price ? ` (${price})` : ""}`,
+  // Pre-filled chat message (WhatsApp, LINE OA) when a customer taps a contact button
+  greeting: "ສະບາຍດີ",
+  interest: (name: string, price: string) => `ສະບາຍດີ ສົນໃຈແບບ "${name}"${price ? ` (${price})` : ""}`,
 
   // ----- Admin: general -----
   adminTitle: "ຈັດການຮ້ານ",
