@@ -12,6 +12,11 @@ type Props = { settings: Settings; categories: Category[]; products: Product[] }
 
 const HASH_PREFIX = "#p-";
 
+/** Full link that opens this product's detail sheet, e.g. https://shop.web.app/#p-<id>. */
+function productLink(id: string): string {
+  return `${window.location.origin}${window.location.pathname}${HASH_PREFIX}${id}`;
+}
+
 export function Catalog({ settings, categories, products }: Props) {
   const [cat, setCat] = useState("all");
   const [openId, setOpenId] = useState<string | null>(null);
@@ -125,7 +130,6 @@ export function Catalog({ settings, categories, products }: Props) {
                   <div className="px-3 pb-3 pt-2.5">
                     <div className="truncate text-xs leading-normal text-soft">
                       {catName(p.categoryId)}
-                      {p.code && ` · ${p.code}`}
                     </div>
                     <div className="mt-0.5 line-clamp-2 font-semibold leading-snug">{p.name}</div>
                     {formatPrice(p.price) && <div className="mt-1 font-bold text-brand">{formatPrice(p.price)}</div>}
@@ -216,7 +220,7 @@ function ProductDialog({
     };
   }, []);
 
-  const links = contactLinks(settings, t.interest(product.name, product.code, formatPrice(product.price)));
+  const links = contactLinks(settings, t.interest(product.name, formatPrice(product.price), productLink(product.id)));
 
   return (
     <dialog
@@ -241,14 +245,8 @@ function ProductDialog({
         )}
       </div>
       <div className="px-5 pb-4 pt-4">
-        <div className="flex items-center gap-2 text-[13px] text-soft">
-          <span>{categoryName}</span>
-          {product.code && (
-            <span className="rounded-md bg-cream px-1.5 py-0.5 font-semibold text-muted">
-              {t.codeLabel} {product.code}
-            </span>
-          )}
-        </div>
+        <div className="text-[13px] text-soft">{categoryName}</div>
+
         <div className="mt-0.5 flex items-baseline justify-between gap-3">
           <h2 id="product-title" className="text-2xl font-bold leading-snug">
             {product.name}
@@ -262,7 +260,7 @@ function ProductDialog({
       <div className="sticky bottom-0 flex flex-col gap-2.5 border-t border-line bg-white px-4 pb-6 pt-3.5">
         {links.length > 0 ? (
           <>
-            <div className="text-center text-[13px] text-soft">{t.tellShop(product.name, product.code)}</div>
+            <div className="text-center text-[13px] text-soft">{t.tellShop(product.name)}</div>
             <div className="flex flex-wrap gap-2.5 [&>a]:flex-1">
               {links.map((l, i) => (
                 <ContactButton key={l.kind} link={l} primary={i === 0} compact t={t} />

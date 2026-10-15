@@ -92,8 +92,7 @@ function ProductsTab({ products, categories }: { products: Product[]; categories
   const q = query.trim().toLowerCase();
   const list = [...products]
     .filter((p) => filter === "all" || p.categoryId === filter)
-    // search by code ("F0001", "f1", "0001") or by name
-    .filter((p) => !q || p.code.toLowerCase().includes(q) || p.name.toLowerCase().includes(q))
+    .filter((p) => !q || p.name.toLowerCase().includes(q))
     .sort((a, b) => b.createdAt - a.createdAt);
   const shownCount = products.filter((p) => p.visible).length;
 
@@ -166,7 +165,6 @@ function ProductsTab({ products, categories }: { products: Product[]; categories
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-semibold leading-normal">{p.name}</span>
                 <span className="block truncate text-xs leading-normal text-soft">
-                  {p.code && <span className="font-semibold text-muted">{p.code} · </span>}
                   {catName(p.categoryId)}
                   {formatPrice(p.price) && ` · ${formatPrice(p.price)}`}
                 </span>
@@ -341,20 +339,9 @@ function ProductDialog({
     >
       <form action={submit} className="flex flex-col gap-3.5 px-4 pt-3">
         <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <h2 id="pform-title" className="text-lg font-bold leading-normal">
-              {product ? t.editProduct : t.addProduct}
-            </h2>
-            <p className="text-xs leading-normal text-soft">
-              {product?.code ? (
-                <>
-                  {t.codeLabel}: <span className="font-semibold text-ink">{product.code}</span>
-                </>
-              ) : (
-                t.codeAuto
-              )}
-            </p>
-          </div>
+          <h2 id="pform-title" className="text-lg font-bold leading-normal">
+            {product ? t.editProduct : t.addProduct}
+          </h2>
           <button type="button" onClick={onClose} aria-label={t.close} className={`${iconBtn} bg-white`}>
             <CloseIcon className="h-5 w-5" />
           </button>

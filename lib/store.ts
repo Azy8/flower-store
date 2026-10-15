@@ -15,7 +15,6 @@ export class ImageError extends Error {
 
 type ProductRow = {
   id: string;
-  code?: string | null;
   name: string;
   category_id: string;
   price: string;
@@ -50,7 +49,6 @@ function imageUrl(sb: SupabaseClient, path: string | null): string | null {
 
 const toProduct = (sb: SupabaseClient, r: ProductRow): Product => ({
   id: r.id,
-  code: r.code ?? "",
   name: r.name,
   categoryId: r.category_id,
   price: r.price,

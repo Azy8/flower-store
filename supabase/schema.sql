@@ -53,29 +53,6 @@ create or replace function public.is_admin() returns boolean
 language sql stable security definer set search_path = ''
 as $$ select exists (select 1 from public.admins where user_id = auth.uid()) $$;
 
--- ---------- Product codes (F0001, F0002, ...) ----------
--- same as migrations/002_product_code.sql
-create sequence if not exists public.product_code_seq;
-
--- Admins insert products, so they need to draw numbers from the sequence
-grant usage, select on sequence public.product_code_seq to authenticated;
-
-alter table public.products
-  add column if not exists code text not null unique
-  default ('F' || lpad(nextval('public.product_code_seq')::text, 4, '0'));
-
--- Codes never change once given (so a code a customer sent stays valid)
-create or replace function public.keep_product_code() returns trigger
-language plpgsql set search_path = '' as $$
-begin
-  new.code := old.code;
-  return new;
-end $$;
-
-drop trigger if exists products_keep_code on public.products;
-create trigger products_keep_code before update on public.products
-  for each row execute function public.keep_product_code();
-
 -- ---------- Row Level Security ----------
 
 alter table public.categories enable row level security;
