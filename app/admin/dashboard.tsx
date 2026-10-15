@@ -16,7 +16,7 @@ import {
   saveSettingsAction,
   setProductVisibleAction,
 } from "@/lib/admin-api";
-import { CheckIcon, CloseIcon, EditIcon, EyeIcon, ImageIcon, LeafIcon, LogoutIcon, PlusIcon, TrashIcon } from "../components/icons";
+import { CheckIcon, CloseIcon, EditIcon, EyeIcon, ImageIcon, LeafIcon, LogoutIcon, PlusIcon, SearchIcon, TrashIcon } from "../components/icons";
 import { ProductImage } from "../components/product-image";
 
 type Tab = "products" | "categories" | "settings";
@@ -85,11 +85,15 @@ export function Dashboard({ data, email }: { data: StoreData; email: string }) {
 
 function ProductsTab({ products, categories }: { products: Product[]; categories: Category[] }) {
   const [filter, setFilter] = useState("all");
+  const [query, setQuery] = useState("");
   const [editing, setEditing] = useState<Product | "new" | null>(null);
 
   const catName = (id: string) => categories.find((c) => c.id === id)?.name ?? t.noCategory;
+  const q = query.trim().toLowerCase();
   const list = [...products]
     .filter((p) => filter === "all" || p.categoryId === filter)
+    // search by code ("F0001", "f1", "0001") or by name
+    .filter((p) => !q || p.code.toLowerCase().includes(q) || p.name.toLowerCase().includes(q))
     .sort((a, b) => b.createdAt - a.createdAt);
   const shownCount = products.filter((p) => p.visible).length;
 
@@ -100,7 +104,34 @@ function ProductsTab({ products, categories }: { products: Product[]; categories
 
       {categories.length === 0 && <p className={`mt-3 ${errorCls}`}>{t.needCategoryFirst}</p>}
 
-      <div className="no-scrollbar -mx-3 mt-3 flex gap-2 overflow-x-auto px-3">
+      <div role="search" className="relative mt-3">
+        <label htmlFor="psearch" className="sr-only">
+          {t.searchLabel}
+        </label>
+        <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-soft" />
+        <input
+          id="psearch"
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={t.searchPh}
+          autoComplete="off"
+          enterKeyHint="search"
+          className={`${inputCls} h-12 pl-10 pr-11 [&::-webkit-search-cancel-button]:hidden`}
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            aria-label={t.clearSearch}
+            className="absolute right-0.5 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-soft"
+          >
+            <CloseIcon className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
+      <div className="no-scrollbar -mx-3 mt-2.5 flex gap-2 overflow-x-auto px-3">
         {[{ id: "all", name: t.all }, ...categories].map((c) => (
           <button
             key={c.id}
@@ -117,7 +148,9 @@ function ProductsTab({ products, categories }: { products: Product[]; categories
       </div>
 
       <ul className="mt-3 flex flex-col gap-2">
-        {list.length === 0 && <li className="rounded-2xl bg-white p-8 text-center text-sm text-muted">{t.noProducts}</li>}
+        {list.length === 0 && (
+          <li className="rounded-2xl bg-white p-8 text-center text-sm text-muted">{q ? t.noResults(query.trim()) : t.noProducts}</li>
+        )}
         {list.map((p) => (
           <li key={p.id} className="flex items-center gap-1 rounded-2xl border border-line bg-white pr-2">
             {/* the whole row opens the editor */}
@@ -133,6 +166,7 @@ function ProductsTab({ products, categories }: { products: Product[]; categories
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-semibold leading-normal">{p.name}</span>
                 <span className="block truncate text-xs leading-normal text-soft">
+                  {p.code && <span className="font-semibold text-muted">{p.code} · </span>}
                   {catName(p.categoryId)}
                   {formatPrice(p.price) && ` · ${formatPrice(p.price)}`}
                 </span>
@@ -307,9 +341,20 @@ function ProductDialog({
     >
       <form action={submit} className="flex flex-col gap-3.5 px-4 pt-3">
         <div className="flex items-center justify-between gap-3">
-          <h2 id="pform-title" className="text-lg font-bold leading-normal">
-            {product ? t.editProduct : t.addProduct}
-          </h2>
+          <div className="min-w-0">
+            <h2 id="pform-title" className="text-lg font-bold leading-normal">
+              {product ? t.editProduct : t.addProduct}
+            </h2>
+            <p className="text-xs leading-normal text-soft">
+              {product?.code ? (
+                <>
+                  {t.codeLabel}: <span className="font-semibold text-ink">{product.code}</span>
+                </>
+              ) : (
+                t.codeAuto
+              )}
+            </p>
+          </div>
           <button type="button" onClick={onClose} aria-label={t.close} className={`${iconBtn} bg-white`}>
             <CloseIcon className="h-5 w-5" />
           </button>

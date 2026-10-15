@@ -21,10 +21,12 @@ const lo = {
   noContact: "ຮ້ານຍັງບໍ່ໄດ້ໃສ່ຊ່ອງທາງຕິດຕໍ່",
   hoursLabel: "ເວລາເປີດ-ປິດ",
   close: "ປິດ",
-  tellShop: (name: string) => `ບອກຮ້ານວ່າສົນໃຈ “${name}”`,
+  tellShop: (name: string, code: string) => `ບອກຮ້ານວ່າສົນໃຈ “${name}”${code ? ` · ລະຫັດ ${code}` : ""}`,
   // Pre-filled chat message (WhatsApp, LINE OA) when a customer taps a contact button
   greeting: "ສະບາຍດີ",
-  interest: (name: string, price: string) => `ສະບາຍດີ ສົນໃຈແບບ "${name}"${price ? ` (${price})` : ""}`,
+  interest: (name: string, code: string, price: string) =>
+    `ສະບາຍດີ ສົນໃຈແບບ "${name}"${code ? ` (ລະຫັດ ${code})` : ""}${price ? ` ${price}` : ""}`,
+  codeLabel: "ລະຫັດສິນຄ້າ",
 
   // ----- Admin: general -----
   adminTitle: "ຈັດການຮ້ານ",
@@ -55,6 +57,11 @@ const lo = {
   addProduct: "ເພີ່ມສິນຄ້າໃໝ່",
   needCategoryFirst: "ເພີ່ມໝວດໝູ່ກ່ອນ ແລ້ວຈຶ່ງເພີ່ມສິນຄ້າໄດ້",
   noProducts: "ຍັງບໍ່ມີສິນຄ້າ ກົດ “ເພີ່ມສິນຄ້າໃໝ່”",
+  searchLabel: "ຄົ້ນຫາສິນຄ້າ",
+  searchPh: "ຄົ້ນຫາລະຫັດ ຫຼື ຊື່ ເຊັ່ນ F0001",
+  noResults: (q: string) => `ບໍ່ພົບສິນຄ້າ “${q}”`,
+  clearSearch: "ລຶບຄຳຄົ້ນຫາ",
+  codeAuto: "ລະຫັດສິນຄ້າຈະສ້າງໃຫ້ອັດຕະໂນມັດຫຼັງບັນທຶກ",
   noCategory: "— ບໍ່ມີໝວດ —",
   edit: "ແກ້ໄຂ",
   editAria: (name: string) => `ແກ້ໄຂ ${name}`,

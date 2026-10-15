@@ -68,6 +68,12 @@ export const CheckIcon = ({ className }: P) => (
     <path d="M5 12l5 5 9-10" />
   </svg>
 );
+export const SearchIcon = ({ className }: P) => (
+  <svg {...base} className={className}>
+    <circle cx="11" cy="11" r="7" />
+    <path d="M20 20l-3.5-3.5" />
+  </svg>
+);
 export const ImageIcon = ({ className }: P) => (
   <svg {...base} className={className}>
     <rect x="3" y="4" width="18" height="16" rx="2" />
