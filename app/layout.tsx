@@ -16,7 +16,7 @@ const latin = Noto_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "ແຄັດຕາລັອກດອກໄມ້",
+  title: "ຮ້ານດອກໄມ້ນ້ຳເຜິ້ງ",
   description: "ເບິ່ງແບບຊໍ່ດອກໄມ້ ກະຕ່າ ແລະ ພວງມາລາຂອງຮ້ານ ແລ້ວທັກຮ້ານເພື່ອສັ່ງໄດ້ເລີຍ",
 };
 
