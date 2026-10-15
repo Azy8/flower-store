@@ -1,11 +1,10 @@
-"use server";
-
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { getAdmin, login, logout, type AdminSession } from "@/lib/auth";
-import { safeHttpsUrl } from "@/lib/contact";
-import { t, type Dict } from "@/lib/i18n";
-import { priceDigits } from "@/lib/price";
+// Admin operations, called from the admin page in the browser.
+// Checks here are for friendly messages; the real protection is Supabase Row Level
+// Security + table constraints (supabase/schema.sql), which no browser code can bypass.
+import { AUTH_EVENT, login, logout } from "./auth";
+import { safeHttpsUrl } from "./contact";
+import { t, type Dict } from "./i18n";
+import { priceDigits } from "./price";
 import {
   addCategory,
   categoryExists,
@@ -22,8 +21,12 @@ import {
   saveSettings,
   setProductVisible,
   updateProduct,
-} from "@/lib/store";
-import type { ActionResult, Settings } from "@/lib/types";
+} from "./store";
+import { supabase } from "./supabase";
+import type { ActionResult, Settings } from "./types";
+
+/** Fired after any successful change so the admin page reloads its data. */
+export const STORE_EVENT = "flower-store-changed";
 
 /** Reads a trimmed string field and caps its length. */
 function text(fd: FormData, key: string, max: number): string {
@@ -36,17 +39,17 @@ const fail = (error: string): ActionResult => ({ ok: false, error });
 // Postgres uuid columns reject anything else; checking first gives a clean error instead.
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/**
- * Wraps every admin action: re-checks the login (server actions are public endpoints;
- * RLS in Supabase is the second line of defence), and turns unexpected errors into
- * a generic message while logging the details on the server.
- */
-async function asAdmin(fn: (admin: AdminSession, t: Dict) => Promise<ActionResult>): Promise<ActionResult> {
-  const admin = await getAdmin();
-  if (!admin) return fail(t.sessionExpired);
+/** Wraps every admin change: needs a login, turns unexpected errors into a generic message. */
+async function asAdmin(fn: (sb: ReturnType<typeof supabase>, t: Dict) => Promise<ActionResult>): Promise<ActionResult> {
+  const sb = supabase();
+  const { data } = await sb.auth.getSession();
+  if (!data.session) {
+    window.dispatchEvent(new Event(AUTH_EVENT));
+    return fail(t.sessionExpired);
+  }
   try {
-    const result = await fn(admin, t);
-    if (result.ok) revalidatePath("/", "layout");
+    const result = await fn(sb, t);
+    if (result.ok) window.dispatchEvent(new Event(STORE_EVENT));
     return result;
   } catch (e) {
     console.error(e);
@@ -61,18 +64,19 @@ export async function loginAction(_prev: ActionResult | null, fd: FormData): Pro
   if (result === "invalid") return fail(t.loginInvalid);
   if (result === "notAdmin") return fail(t.loginNotAdmin);
   if (result === "tooMany") return fail(t.loginTooMany);
-  redirect("/admin");
+  window.dispatchEvent(new Event(AUTH_EVENT));
+  return { ok: true };
 }
 
 export async function logoutAction(): Promise<void> {
   await logout();
-  redirect("/admin");
+  window.dispatchEvent(new Event(AUTH_EVENT));
 }
 
 // ---------- Products ----------
 
 export async function saveProductAction(_prev: ActionResult | null, fd: FormData): Promise<ActionResult> {
-  return asAdmin(async ({ sb }, t) => {
+  return asAdmin(async (sb, t) => {
     const id = text(fd, "id", 64);
     const input = {
       name: text(fd, "name", 120),
@@ -91,7 +95,7 @@ export async function saveProductAction(_prev: ActionResult | null, fd: FormData
 
     const file = fd.get("image");
     let newImage: string | null = null;
-    if (file instanceof File && file.size > 0) {
+    if (file instanceof Blob && file.size > 0) {
       try {
         newImage = await saveImage(sb, file);
       } catch (e) {
@@ -114,7 +118,7 @@ export async function saveProductAction(_prev: ActionResult | null, fd: FormData
 }
 
 export async function deleteProductAction(id: string): Promise<ActionResult> {
-  return asAdmin(async ({ sb }, t) => {
+  return asAdmin(async (sb, t) => {
     if (!UUID_RE.test(String(id))) return fail(t.errProductNotFound);
     await deleteImage(sb, await deleteProduct(sb, id));
     return { ok: true };
@@ -122,7 +126,7 @@ export async function deleteProductAction(id: string): Promise<ActionResult> {
 }
 
 export async function setProductVisibleAction(id: string, visible: boolean): Promise<ActionResult> {
-  return asAdmin(async ({ sb }, t) => {
+  return asAdmin(async (sb, t) => {
     if (!UUID_RE.test(String(id))) return fail(t.errProductNotFound);
     await setProductVisible(sb, id, Boolean(visible));
     return { ok: true };
@@ -132,7 +136,7 @@ export async function setProductVisibleAction(id: string, visible: boolean): Pro
 // ---------- Categories ----------
 
 export async function addCategoryAction(_prev: ActionResult | null, fd: FormData): Promise<ActionResult> {
-  return asAdmin(async ({ sb }, t) => {
+  return asAdmin(async (sb, t) => {
     const name = text(fd, "name", 60);
     if (!name) return fail(t.errNeedCategoryName);
     if ((await addCategory(sb, name)) === "duplicate") return fail(t.errCategoryExists);
@@ -141,7 +145,7 @@ export async function addCategoryAction(_prev: ActionResult | null, fd: FormData
 }
 
 export async function renameCategoryAction(id: string, rawName: string): Promise<ActionResult> {
-  return asAdmin(async ({ sb }, t) => {
+  return asAdmin(async (sb, t) => {
     const name = String(rawName).trim().slice(0, 60);
     if (!name) return fail(t.errNeedCategoryName);
     if (!UUID_RE.test(String(id))) return fail(t.errCategoryNotFound);
@@ -151,7 +155,7 @@ export async function renameCategoryAction(id: string, rawName: string): Promise
 }
 
 export async function moveCategoryAction(id: string, dir: -1 | 1): Promise<ActionResult> {
-  return asAdmin(async ({ sb }, t) => {
+  return asAdmin(async (sb, t) => {
     if (!UUID_RE.test(String(id))) return fail(t.errCategoryNotFound);
     await moveCategory(sb, id, dir === -1 ? -1 : 1);
     return { ok: true };
@@ -159,7 +163,7 @@ export async function moveCategoryAction(id: string, dir: -1 | 1): Promise<Actio
 }
 
 export async function deleteCategoryAction(id: string): Promise<ActionResult> {
-  return asAdmin(async ({ sb }, t) => {
+  return asAdmin(async (sb, t) => {
     if (!UUID_RE.test(String(id))) return fail(t.errCategoryNotFound);
     const used = await countProductsInCategory(sb, id);
     if (used > 0) return fail(t.errCategoryInUse(used));
@@ -171,7 +175,7 @@ export async function deleteCategoryAction(id: string): Promise<ActionResult> {
 // ---------- Shop settings ----------
 
 export async function saveSettingsAction(_prev: ActionResult | null, fd: FormData): Promise<ActionResult> {
-  return asAdmin(async ({ sb }, t) => {
+  return asAdmin(async (sb, t) => {
     const facebookRaw = text(fd, "facebookUrl", 300);
     const facebookUrl = facebookRaw ? safeHttpsUrl(facebookRaw) : "";
     if (facebookUrl === null) return fail(t.errFacebookHttps);

@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { t } from "@/lib/i18n";
-import { loginAction } from "./actions";
+import { loginAction } from "@/lib/admin-api";
 import { LeafIcon } from "../components/icons";
 
 export function LoginForm() {

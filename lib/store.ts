@@ -1,6 +1,5 @@
-// Server-only data layer: tables + photo storage in Supabase.
-// Every function takes the client to use: supabasePublic() for visitors, the admin's session client for changes.
-import { randomUUID } from "crypto";
+// Data layer: tables + photo storage in Supabase (runs in the browser).
+// Row Level Security decides what each call may read or change.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { IMAGE_BUCKET } from "./supabase";
 import type { Category, Product, Settings, StoreData } from "./types";
@@ -197,27 +196,31 @@ export async function saveSettings(sb: SupabaseClient, s: Settings) {
 
 const MIME = { jpg: "image/jpeg", png: "image/png", webp: "image/webp" } as const;
 
-/** Detects the real image type from the file's first bytes (never trust the client's MIME type). */
-function sniffImageType(buf: Buffer): keyof typeof MIME | null {
-  if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return "jpg";
-  if (buf.length >= 8 && buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])))
-    return "png";
-  if (buf.length >= 12 && buf.toString("ascii", 0, 4) === "RIFF" && buf.toString("ascii", 8, 12) === "WEBP")
-    return "webp";
+const PNG_SIG = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+const ascii = (b: Uint8Array, from: number, to: number) => String.fromCharCode(...b.subarray(from, to));
+
+/**
+ * Detects the real image type from the file's first bytes (never trust the file name).
+ * Note: this runs in the browser, so it's a convenience check; the storage bucket itself
+ * only accepts jpeg/png/webp up to 8MB and only from admins (supabase/schema.sql).
+ */
+function sniffImageType(b: Uint8Array): keyof typeof MIME | null {
+  if (b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return "jpg";
+  if (b.length >= 8 && PNG_SIG.every((v, i) => b[i] === v)) return "png";
+  if (b.length >= 12 && ascii(b, 0, 4) === "RIFF" && ascii(b, 8, 12) === "WEBP") return "webp";
   return null;
 }
 
 /** Validates and uploads an image. Returns its path in the bucket. */
-export async function saveImage(sb: SupabaseClient, file: File): Promise<string> {
+export async function saveImage(sb: SupabaseClient, file: Blob): Promise<string> {
   if (file.size > MAX_IMAGE_BYTES) throw new ImageError("tooBig");
-  const buf = Buffer.from(await file.arrayBuffer());
-  const ext = sniffImageType(buf);
+  const ext = sniffImageType(new Uint8Array(await file.slice(0, 16).arrayBuffer()));
   if (!ext) throw new ImageError("badType");
-  const path = `${randomUUID()}.${ext}`; // random name: never collides, safe to cache forever
+  const path = `${crypto.randomUUID()}.${ext}`; // random name: never collides, safe to cache forever
   check(
     await sb
       .storage.from(IMAGE_BUCKET)
-      .upload(path, buf, { contentType: MIME[ext], cacheControl: "31536000", upsert: false }),
+      .upload(path, file, { contentType: MIME[ext], cacheControl: "31536000", upsert: false }),
   );
   return path;
 }

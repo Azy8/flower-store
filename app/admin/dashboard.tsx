@@ -15,7 +15,7 @@ import {
   saveProductAction,
   saveSettingsAction,
   setProductVisibleAction,
-} from "./actions";
+} from "@/lib/admin-api";
 import { CheckIcon, CloseIcon, EditIcon, EyeIcon, ImageIcon, LeafIcon, LogoutIcon, PlusIcon, TrashIcon } from "../components/icons";
 import { ProductImage } from "../components/product-image";
 
