@@ -42,3 +42,6 @@ next-env.d.ts
 
 # shop data (products, photos) - back this folder up
 /data/
+
+# firebase deploy cache
+/.firebase/
