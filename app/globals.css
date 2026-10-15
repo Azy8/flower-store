@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+/* Shop palette (taken from the reference design) */
+@theme {
+  --color-brand: #c23659;
+  --color-brand-dark: #a12a49;
+  --color-ink: #2b1b23;
+  --color-muted: #5e4450;
+  --color-soft: #7a5a68;
+  --color-line: #f0e1e6;
+  --color-chip: #e3c4cf;
+  --color-blush: #fdeff3;
+  --color-cream: #fbf6f8;
+  --font-sans: var(--font-latin), var(--font-lao), "Phetsarath OT", system-ui,
+    sans-serif;
+}
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  background: #ffffff;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--color-brand);
+  outline-offset: 3px;
+}
+
+/* Hide scrollbar on the horizontal category bar */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Loader: flowers grow and shrink one after another */
+@theme {
+  --animate-bloom: bloom 1.2s ease-in-out infinite;
+  @keyframes bloom {
+    0%,
+    100% {
+      transform: scale(0.55);
+      opacity: 0.55;
+    }
+    50% {
+      transform: scale(1.3);
+      opacity: 1;
+    }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-bloom {
+    animation: none;
+  }
+}
+
+dialog::backdrop {
+  background: rgb(43 27 35 / 0.55);
+}

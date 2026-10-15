@@ -1,0 +1,39 @@
+export type Category = {
+  id: string;
+  name: string;
+};
+
+export type Product = {
+  id: string;
+  name: string;
+  categoryId: string;
+  /** Free text so the owner can write "690", "เริ่มต้น 500", "500–1,500" etc. */
+  price: string;
+  description: string;
+  /** Small badge on the card, e.g. "ขายดี", "ใหม่". Empty = no badge. */
+  tag: string;
+  /** Public URL of the photo in Supabase Storage (null = no photo). */
+  image: string | null;
+  visible: boolean;
+  createdAt: number;
+};
+
+export type Settings = {
+  shopName: string;
+  tagline: string;
+  headline: string;
+  phone: string;
+  lineId: string;
+  whatsapp: string;
+  facebookUrl: string;
+  address: string;
+  hours: string;
+};
+
+export type StoreData = {
+  settings: Settings;
+  categories: Category[];
+  products: Product[];
+};
+
+export type ActionResult = { ok: boolean; error?: string; message?: string };
