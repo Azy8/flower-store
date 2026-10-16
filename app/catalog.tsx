@@ -28,15 +28,18 @@ export function Catalog({ settings, categories, products }: Props) {
   const listTop = useRef<HTMLElement>(null);
   const [openId, setOpenId] = useState<string | null>(null);
 
-  // Only show tabs for categories that actually have products.
+  // Tabs: only categories that have products at all (so they don't jump around),
+  // but the numbers count only products matching the selected tag.
   const tabs = useMemo(() => {
+    const hasAny = new Set(products.map((p) => p.categoryId));
     const counts = new Map<string, number>();
-    for (const p of products) counts.set(p.categoryId, (counts.get(p.categoryId) ?? 0) + 1);
+    const tagged = products.filter((p) => matchesTag(p, tag));
+    for (const p of tagged) counts.set(p.categoryId, (counts.get(p.categoryId) ?? 0) + 1);
     return [
-      { id: "all", name: t.all, count: products.length },
-      ...categories.filter((c) => counts.has(c.id)).map((c) => ({ ...c, count: counts.get(c.id)! })),
+      { id: "all", name: t.all, count: tagged.length },
+      ...categories.filter((c) => hasAny.has(c.id)).map((c) => ({ ...c, count: counts.get(c.id) ?? 0 })),
     ];
-  }, [categories, products]);
+  }, [categories, products, tag]);
 
   const catName = (id: string) => categories.find((c) => c.id === id)?.name ?? "";
   const inCategory = cat === "all" ? products : products.filter((p) => p.categoryId === cat);
@@ -125,7 +128,7 @@ export function Catalog({ settings, categories, products }: Props) {
               onClick={() => pickCategory(tab.id)}
               className={`min-h-11 flex-none whitespace-nowrap rounded-full border-2 px-4 text-[15px] font-semibold transition-colors ${
                 cat === tab.id ? "border-brand bg-brand text-white" : "border-chip bg-white text-ink"
-              }`}
+              } ${tab.count === 0 && cat !== tab.id ? "opacity-45" : ""}`}
             >
               {tab.name} <span className="font-normal opacity-80">({tab.count})</span>
             </button>
