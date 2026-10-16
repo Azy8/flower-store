@@ -22,7 +22,7 @@ import {
   setProductVisible,
   updateProduct,
 } from "./store";
-import { supabase } from "./supabase";
+import { saveLastEmail, setRememberLogin, supabase } from "./supabase";
 import type { ActionResult, Settings } from "./types";
 
 /** Fired after any successful change so the admin page reloads its data. */
@@ -60,7 +60,10 @@ async function asAdmin(fn: (sb: ReturnType<typeof supabase>, t: Dict) => Promise
 // ---------- Login ----------
 
 export async function loginAction(_prev: ActionResult | null, fd: FormData): Promise<ActionResult> {
-  const result = await login(text(fd, "email", 200), text(fd, "password", 200));
+  const email = text(fd, "email", 200);
+  setRememberLogin(fd.get("remember") === "on"); // decides where the session is stored
+  const result = await login(email, text(fd, "password", 200));
+  if (result === "ok") saveLastEmail(email);
   if (result === "invalid") return fail(t.loginInvalid);
   if (result === "notAdmin") return fail(t.loginNotAdmin);
   if (result === "tooMany") return fail(t.loginTooMany);

@@ -18,6 +18,7 @@ import {
 } from "@/lib/admin-api";
 import { CheckIcon, CloseIcon, EditIcon, EyeIcon, ImageIcon, LeafIcon, LogoutIcon, PlusIcon, SearchIcon, TrashIcon } from "../components/icons";
 import { Pager, paginate } from "../components/pager";
+import { ALL_TAGS, matchesTag, TagFilter, usedTags } from "../components/tag-filter";
 import { ProductImage } from "../components/product-image";
 
 type Tab = "products" | "categories" | "settings";
@@ -87,6 +88,7 @@ export function Dashboard({ data, email }: { data: StoreData; email: string }) {
 function ProductsTab({ products, categories }: { products: Product[]; categories: Category[] }) {
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
+  const [tag, setTag] = useState(ALL_TAGS);
   const [page, setPage] = useState(1);
   const listTop = useRef<HTMLDivElement>(null);
   const [editing, setEditing] = useState<Product | "new" | null>(null);
@@ -96,6 +98,7 @@ function ProductsTab({ products, categories }: { products: Product[]; categories
   const list = [...products]
     .filter((p) => filter === "all" || p.categoryId === filter)
     .filter((p) => !q || p.name.toLowerCase().includes(q))
+    .filter((p) => matchesTag(p, tag))
     .sort((a, b) => b.createdAt - a.createdAt);
   // clamped: after deleting the last item on a page, you land on the previous page
   const { pageItems, current, totalPages } = paginate(list, page);
@@ -103,6 +106,7 @@ function ProductsTab({ products, categories }: { products: Product[]; categories
     setPage(p);
     listTop.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
+  const tags = usedTags(products);
   const shownCount = products.filter((p) => p.visible).length;
 
   return (
@@ -162,6 +166,16 @@ function ProductsTab({ products, categories }: { products: Product[]; categories
             {c.name}
           </button>
         ))}
+      </div>
+      <div className="mt-2.5">
+        <TagFilter
+          tags={tags}
+          value={tag}
+          onChange={(v) => {
+            setTag(v);
+            setPage(1);
+          }}
+        />
       </div>
 
       <ul className="mt-3 flex flex-col gap-2">

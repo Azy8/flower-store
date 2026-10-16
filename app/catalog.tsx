@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { Category, Product, Settings } from "@/lib/types";
 import { contactLinks, telLink, type ContactLink } from "@/lib/contact";
 import { t, type Dict } from "@/lib/i18n";
 import { formatPrice } from "@/lib/price";
 import { ChatIcon, CloseIcon, LeafIcon, PhoneIcon, PinIcon } from "./components/icons";
+import { AnimatedHeadline } from "./components/animated-headline";
 import { Pager, paginate } from "./components/pager";
 import { ProductImage } from "./components/product-image";
+import { useReveal } from "./components/use-reveal";
+import { ALL_TAGS, matchesTag, TagFilter, usedTags } from "./components/tag-filter";
 
 type Props = { settings: Settings; categories: Category[]; products: Product[] };
 
@@ -20,6 +23,7 @@ function productLink(id: string): string {
 
 export function Catalog({ settings, categories, products }: Props) {
   const [cat, setCat] = useState("all");
+  const [tag, setTag] = useState(ALL_TAGS);
   const [page, setPage] = useState(1);
   const listTop = useRef<HTMLElement>(null);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -35,12 +39,21 @@ export function Catalog({ settings, categories, products }: Props) {
   }, [categories, products]);
 
   const catName = (id: string) => categories.find((c) => c.id === id)?.name ?? "";
-  const shown = cat === "all" ? products : products.filter((p) => p.categoryId === cat);
+  const inCategory = cat === "all" ? products : products.filter((p) => p.categoryId === cat);
+  const shown = inCategory.filter((p) => matchesTag(p, tag));
+  const tags = useMemo(() => usedTags(products), [products]);
+  const tagCounts = Object.fromEntries(tags.map((tg) => [tg, inCategory.filter((p) => p.tag === tg).length]));
   const { pageItems, current, totalPages } = paginate(shown, page);
+  const gridRef = useRef<HTMLUListElement>(null);
+  useReveal(gridRef, pageItems.map((p) => p.id).join());
 
   const pickCategory = (id: string) => {
     setCat(id);
     setPage(1); // a new category starts on its first page
+  };
+  const pickTag = (value: string) => {
+    setTag(value);
+    setPage(1);
   };
   const goToPage = (p: number) => {
     setPage(p);
@@ -99,8 +112,7 @@ export function Catalog({ settings, categories, products }: Props) {
       </header>
 
       <section className="mx-auto max-w-5xl px-4 pb-2 pt-6">
-        <h1 className="max-w-xl text-[28px] font-bold leading-snug sm:text-[32px]">{settings.headline}</h1>
-        <p className="mt-2 max-w-lg text-base leading-relaxed text-muted">{t.hint}</p>
+        <AnimatedHeadline text={settings.headline} subtitle={t.hint} />
       </section>
 
       <nav aria-label={t.categoriesNav} className="sticky top-0 z-10 mt-3 border-b border-line bg-white/95 py-3 backdrop-blur">
@@ -119,18 +131,22 @@ export function Catalog({ settings, categories, products }: Props) {
             </button>
           ))}
         </div>
+        <div className="mx-auto mt-2.5 max-w-5xl px-4">
+          <TagFilter tags={tags} value={tag} onChange={pickTag} counts={tagCounts} />
+        </div>
       </nav>
 
       <main ref={listTop} className="mx-auto max-w-5xl scroll-mt-16 px-4 pb-2 pt-4">
         {shown.length === 0 ? (
-          <p className="rounded-2xl bg-cream px-4 py-12 text-center text-muted">{t.empty}</p>
+          <p className="rounded-2xl bg-cream px-4 py-12 text-center text-muted">{tag ? t.noTagMatch : t.empty}</p>
         ) : (
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
-            {pageItems.map((p) => (
-              <li key={p.id}>
+          <ul ref={gridRef} className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+            {pageItems.map((p, i) => (
+              // rises in when scrolled into view; cards in the same row follow each other slightly
+              <li key={p.id} className="card-rise" style={{ "--rise-delay": `${(i % 4) * 70}ms` } as CSSProperties}>
                 <a
                   href={`${HASH_PREFIX}${p.id}`}
-                  className="block overflow-hidden rounded-2xl border border-line bg-white transition-shadow hover:shadow-md"
+                  className="block overflow-hidden rounded-2xl border border-line bg-white transition duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.97]"
                 >
                   <div className="relative aspect-[4/5] bg-blush">
                     <ProductImage image={p.image} alt={p.name} sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 260px" />
