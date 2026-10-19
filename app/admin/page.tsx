@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 // Static page: login and data both happen in the browser against Supabase.
 export default function AdminPage() {
   return (
-    <div className="flex flex-1 flex-col bg-cream">
+    <div className="flex min-w-0 flex-1 flex-col bg-cream">
       <AdminApp />
     </div>
   );

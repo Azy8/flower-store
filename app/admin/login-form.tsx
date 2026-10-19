@@ -13,7 +13,7 @@ export function LoginForm() {
   const [remember] = useState(getRememberLogin);
   const inputCls = "h-13 rounded-xl border-2 border-chip bg-white px-3.5 text-base";
   return (
-    <main className="mx-auto flex max-w-sm flex-col px-4 py-10">
+    <main className="mx-auto flex w-full min-w-0 max-w-sm flex-col px-4 py-10">
       <LeafIcon className="h-10 w-10 text-brand" />
       <h1 className="mt-4 text-2xl font-bold">{t.loginTitle}</h1>
       <p className="mt-1 text-muted">{t.loginSubtitle}</p>

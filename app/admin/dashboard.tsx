@@ -74,7 +74,7 @@ export function Dashboard({ data, email }: { data: StoreData; email: string }) {
         </nav>
       </header>
 
-      <main className="mx-auto max-w-2xl px-3 pb-28 pt-4">
+      <main className="mx-auto w-full min-w-0 max-w-2xl px-3 pb-28 pt-4">
         {tab === "products" && <ProductsTab products={data.products} categories={data.categories} />}
         {tab === "categories" && <CategoriesTab categories={data.categories} products={data.products} />}
         {tab === "settings" && <SettingsTab data={data} />}
